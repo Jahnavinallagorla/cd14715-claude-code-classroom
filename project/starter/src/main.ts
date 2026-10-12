@@ -75,14 +75,26 @@ async function main(): Promise<void> {
     );
   }
 
+  // 4. GitHub token (the GitHub MCP server needs it to read pull requests)
+  if (!process.env.GITHUB_TOKEN) {
+    fail(
+      [
+        'GITHUB_TOKEN is not set. The GitHub MCP server needs it to read pull requests.',
+        'Add this line to your .env file:',
+        '  GITHUB_TOKEN=ghp_your-token-here',
+        'Create a token at https://github.com/settings/tokens (read access is enough).'
+      ].join('\n')
+    );
+  }
+
   console.log(`Reviewing ${owner}/${repo} pull request #${prNumber}...`);
 
   try {
-    // 4. Run the review
+    // 5. Run the review
     const orchestrator = new CodeReviewOrchestrator();
     const report = await orchestrator.reviewPullRequest(owner, repo, prNumber);
 
-    // 5. Generate the three report formats
+    // 6. Generate the three report formats
     const generator = new ReportGenerator();
     const jsonReport = generator.generateJSONReport(report);
     const markdownReport = generator.generateMarkdownReport(report);
@@ -110,7 +122,7 @@ async function main(): Promise<void> {
         '',
         'What to check:',
         '  - Your ANTHROPIC_API_KEY (and ANTHROPIC_BASE_URL if you use the Udacity key)',
-        '  - That the pull request exists and the repository is public (or GITHUB_TOKEN is set)',
+        '  - That GITHUB_TOKEN is valid and the pull request exists',
         '  - The details in logs/combined.log'
       ].join('\n')
     );

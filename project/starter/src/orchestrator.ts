@@ -2,7 +2,7 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 import type { Options } from '@anthropic-ai/claude-agent-sdk';
 import { ReviewReportSchema, ReviewReportJSONSchema } from './types/index.js';
 import type { ReviewReport } from './types/index.js';
-import { mcpServersConfig } from './config/mcp.config.js';
+import { getMcpServersConfig } from './config/mcp.config.js';
 import {
   codeQualityAnalyzer,
   testCoverageAnalyzer,
@@ -172,7 +172,7 @@ export class CodeReviewOrchestrator {
       cwd: this.projectRoot,
       // Load .claude/skills from the project directory
       settingSources: ['project'],
-      mcpServers: mcpServersConfig,
+      mcpServers: getMcpServersConfig(),
       // Subagent names must match the names used in the orchestrator prompt
       agents: {
         'code-quality-analyzer': codeQualityAnalyzer,
