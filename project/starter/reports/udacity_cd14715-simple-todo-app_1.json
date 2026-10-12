@@ -1,0 +1,296 @@
+{
+  "pullRequest": {
+    "owner": "udacity",
+    "repo": "cd14715-simple-todo-app",
+    "number": 1
+  },
+  "fileReviews": [
+    {
+      "file": "fixtures/clean-code.ts",
+      "codeQuality": {
+        "file": "fixtures/clean-code.ts",
+        "issues": [
+          {
+            "line": 38,
+            "severity": "medium",
+            "category": "security",
+            "description": "Manual XSS sanitization is incomplete and misses many attack vectors (e.g., backticks, JavaScript URLs, event handlers, Unicode exploits)",
+            "suggestion": "Use a proven sanitization library like DOMPurify or validator.js escape functions. Example: import { escape } from 'validator'; const sanitized = escape(input);"
+          },
+          {
+            "line": 48,
+            "severity": "medium",
+            "category": "bug-risk",
+            "description": "Missing error handling for async saveUser() operation. If database save fails, the error will be an unhandled promise rejection",
+            "suggestion": "Wrap saveUser() in try-catch block: try { await saveUser(user); } catch (error) { throw new Error('Failed to create user: ' + error.message); }"
+          },
+          {
+            "line": 75,
+            "severity": "medium",
+            "category": "bug-risk",
+            "description": "ID generation using Date.now() + Math.random() is not guaranteed to be unique in high-concurrency scenarios or distributed systems",
+            "suggestion": "Use a proper UUID library like 'crypto.randomUUID()' (Node 14.17+) or the 'uuid' package: import { v4 as uuidv4 } from 'uuid'; return uuidv4();"
+          },
+          {
+            "line": 31,
+            "severity": "low",
+            "category": "best-practice",
+            "description": "Email validation regex is overly simplistic and may allow invalid email formats or miss edge cases",
+            "suggestion": "Use a comprehensive email validation library like 'validator.js': import validator from 'validator'; return validator.isEmail(email);"
+          },
+          {
+            "line": 62,
+            "severity": "low",
+            "category": "maintainability",
+            "description": "Email is lowercased after validation, but validation is case-sensitive. This creates inconsistency in how emails are processed",
+            "suggestion": "Normalize email before validation: const normalizedEmail = input.email.toLowerCase(); if (!isValidEmail(normalizedEmail)) { ... }"
+          },
+          {
+            "line": 84,
+            "severity": "low",
+            "category": "bug-risk",
+            "description": "Database query is commented out, causing the function to succeed without actually persisting data. This could mask bugs in testing/production",
+            "suggestion": "Either uncomment the database call or add a TODO/warning comment explaining why it's disabled, or throw an error if not implemented"
+          },
+          {
+            "line": 31,
+            "severity": "info",
+            "category": "security",
+            "description": "No input length validation before regex test. Extremely long inputs could cause ReDoS (Regular Expression Denial of Service) with complex patterns",
+            "suggestion": "Add length check before regex: if (!email || email.length > 320) return false; // RFC 5321 max length"
+          },
+          {
+            "line": 82,
+            "severity": "info",
+            "category": "maintainability",
+            "description": "Hardcoded SQL with table and column names makes schema changes harder to maintain",
+            "suggestion": "Consider using a query builder (e.g., Knex.js) or ORM (e.g., TypeORM, Prisma) for better maintainability and type safety"
+          }
+        ],
+        "overallScore": 72,
+        "summary": "Generally well-structured code with good intentions (input validation, sanitization, parameterized queries), but has medium-severity issues around incomplete XSS sanitization, weak ID generation, and missing error handling for async operations. The code demonstrates security awareness but needs production-ready implementations."
+      },
+      "testCoverage": {
+        "file": "fixtures/clean-code.ts",
+        "hasTests": false,
+        "testFiles": [],
+        "untestedPaths": [
+          {
+            "type": "function",
+            "location": "isValidEmail (line 24-27)",
+            "priority": "high",
+            "reasoning": "Email validation is security-critical functionality that can allow invalid emails through if the regex is incorrect. The regex pattern needs verification against edge cases like multiple @, missing TLD, etc.",
+            "suggestedTest": "describe('isValidEmail', () => {\n  test('should accept valid email', () => {\n    expect(isValidEmail('user@example.com')).toBe(true);\n  });\n  test('should reject email without @', () => {\n    expect(isValidEmail('userexample.com')).toBe(false);\n  });\n  test('should reject email without domain', () => {\n    expect(isValidEmail('user@')).toBe(false);\n  });\n  test('should reject email without TLD', () => {\n    expect(isValidEmail('user@example')).toBe(false);\n  });\n  test('should reject email with spaces', () => {\n    expect(isValidEmail('user @example.com')).toBe(false);\n  });\n  test('should reject multiple @ symbols', () => {\n    expect(isValidEmail('user@@example.com')).toBe(false);\n  });\n});"
+          },
+          {
+            "type": "function",
+            "location": "sanitizeInput (line 32-38)",
+            "priority": "critical",
+            "reasoning": "Input sanitization is a critical security function to prevent XSS attacks. Missing or incorrect sanitization could allow malicious scripts to execute. The function needs testing for all HTML entities and edge cases.",
+            "suggestedTest": "describe('sanitizeInput', () => {\n  test('should escape < character', () => {\n    expect(sanitizeInput('<script>')).toBe('&lt;script&gt;');\n  });\n  test('should escape > character', () => {\n    expect(sanitizeInput('</div>')).toBe('&lt;/div&gt;');\n  });\n  test('should escape double quotes', () => {\n    expect(sanitizeInput('\"quoted\"')).toBe('&quot;quoted&quot;');\n  });\n  test('should escape single quotes', () => {\n    expect(sanitizeInput(\"'quoted'\")).toBe('&#039;quoted&#039;');\n  });\n  test('should escape all special characters together', () => {\n    expect(sanitizeInput('<img src=\"x\" onerror=\"alert(\\'XSS\\')\"/>')).toBe('&lt;img src=&quot;x&quot; onerror=&quot;alert(&#039;XSS&#039;)&quot;/&gt;');\n  });\n  test('should handle empty string', () => {\n    expect(sanitizeInput('')).toBe('');\n  });\n});"
+          },
+          {
+            "type": "function",
+            "location": "createUser (line 43-66)",
+            "priority": "critical",
+            "reasoning": "Core business logic that handles user creation with validation and sanitization. This is the main entry point that combines multiple security checks. Needs comprehensive testing of happy path and all error paths.",
+            "suggestedTest": "describe('createUser', () => {\n  test('should create user with valid input', async () => {\n    const result = await createUser({ email: 'test@example.com', name: 'John Doe' });\n    expect(result).toMatchObject({\n      email: 'test@example.com',\n      name: 'John Doe'\n    });\n    expect(result.id).toBeDefined();\n    expect(result.createdAt).toBeInstanceOf(Date);\n  });\n  test('should lowercase email', async () => {\n    const result = await createUser({ email: 'TEST@EXAMPLE.COM', name: 'John' });\n    expect(result.email).toBe('test@example.com');\n  });\n  test('should sanitize name with special characters', async () => {\n    const result = await createUser({ email: 'test@example.com', name: '<script>alert(\"xss\")</script>' });\n    expect(result.name).toBe('&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;');\n  });\n});"
+          },
+          {
+            "type": "branch",
+            "location": "createUser - missing email/name validation (line 48-50)",
+            "priority": "high",
+            "reasoning": "Error path for missing required fields needs testing to ensure proper validation occurs and appropriate error messages are returned.",
+            "suggestedTest": "describe('createUser validation errors', () => {\n  test('should throw error when email is missing', async () => {\n    await expect(createUser({ email: '', name: 'John' })).rejects.toThrow('Email and name are required');\n  });\n  test('should throw error when name is missing', async () => {\n    await expect(createUser({ email: 'test@example.com', name: '' })).rejects.toThrow('Email and name are required');\n  });\n  test('should throw error when both are missing', async () => {\n    await expect(createUser({ email: '', name: '' })).rejects.toThrow('Email and name are required');\n  });\n});"
+          },
+          {
+            "type": "branch",
+            "location": "createUser - invalid email format (line 52-54)",
+            "priority": "high",
+            "reasoning": "Error path for invalid email format must be tested to verify that only valid emails are accepted and proper error handling occurs.",
+            "suggestedTest": "describe('createUser email validation', () => {\n  test('should throw error for invalid email format', async () => {\n    await expect(createUser({ email: 'invalid-email', name: 'John' })).rejects.toThrow('Invalid email format');\n  });\n  test('should throw error for email without @', async () => {\n    await expect(createUser({ email: 'testexample.com', name: 'John' })).rejects.toThrow('Invalid email format');\n  });\n  test('should throw error for email without domain', async () => {\n    await expect(createUser({ email: 'test@', name: 'John' })).rejects.toThrow('Invalid email format');\n  });\n});"
+          },
+          {
+            "type": "function",
+            "location": "generateId (line 71-73)",
+            "priority": "medium",
+            "reasoning": "ID generation is important for data integrity. The function should be tested to ensure IDs are unique and follow expected format, though collision risk is low.",
+            "suggestedTest": "describe('generateId', () => {\n  test('should generate ID with correct prefix', () => {\n    const id = generateId();\n    expect(id).toMatch(/^user_\\d+_[a-z0-9]{7}$/);\n  });\n  test('should generate unique IDs', () => {\n    const id1 = generateId();\n    const id2 = generateId();\n    expect(id1).not.toBe(id2);\n  });\n  test('should generate IDs with correct length', () => {\n    const id = generateId();\n    const parts = id.split('_');\n    expect(parts[0]).toBe('user');\n    expect(parts[2]).toHaveLength(7);\n  });\n});\nNote: generateId is not exported, so tests would need it exported or tested indirectly through createUser."
+          },
+          {
+            "type": "function",
+            "location": "saveUser (line 78-84)",
+            "priority": "medium",
+            "reasoning": "Database persistence function. Currently commented out but the parameterized query structure should be tested when implemented to ensure SQL injection protection.",
+            "suggestedTest": "describe('saveUser', () => {\n  test('should call database with parameterized query', async () => {\n    const mockDb = { query: jest.fn() };\n    const user: User = {\n      id: 'user_123',\n      email: 'test@example.com',\n      name: 'John Doe',\n      createdAt: new Date('2026-01-01')\n    };\n    await saveUser(user);\n    // When implemented, verify:\n    // expect(mockDb.query).toHaveBeenCalledWith(\n    //   'INSERT INTO users (id, email, name, created_at) VALUES ($1, $2, $3, $4)',\n    //   ['user_123', 'test@example.com', 'John Doe', expect.any(Date)]\n    // );\n  });\n});\nNote: saveUser is not exported, needs to be exported or mocked for testing."
+          },
+          {
+            "type": "edge-case",
+            "location": "isValidEmail - special characters and unicode",
+            "priority": "medium",
+            "reasoning": "Email validation should handle unicode characters, special valid email formats (plus signs, dots), and very long emails.",
+            "suggestedTest": "describe('isValidEmail edge cases', () => {\n  test('should accept email with plus sign', () => {\n    expect(isValidEmail('user+tag@example.com')).toBe(true);\n  });\n  test('should accept email with dots', () => {\n    expect(isValidEmail('first.last@example.com')).toBe(true);\n  });\n  test('should reject extremely long email', () => {\n    const longEmail = 'a'.repeat(300) + '@example.com';\n    expect(isValidEmail(longEmail)).toBe(true); // Current regex would accept this, may want to add length check\n  });\n  test('should handle unicode characters appropriately', () => {\n    expect(isValidEmail('用户@example.com')).toBe(true); // Current regex accepts unicode\n  });\n});"
+          },
+          {
+            "type": "edge-case",
+            "location": "sanitizeInput - special cases",
+            "priority": "medium",
+            "reasoning": "Sanitization should handle very long strings, unicode, null bytes, and other edge cases that could bypass security.",
+            "suggestedTest": "describe('sanitizeInput edge cases', () => {\n  test('should handle very long input', () => {\n    const longInput = '<'.repeat(10000) + '>';\n    const result = sanitizeInput(longInput);\n    expect(result).toBe('&lt;'.repeat(10000) + '&gt;');\n  });\n  test('should handle unicode characters', () => {\n    expect(sanitizeInput('用户<script>')).toBe('用户&lt;script&gt;');\n  });\n  test('should handle already encoded entities', () => {\n    expect(sanitizeInput('&lt;test&gt;')).toBe('&amp;lt;test&amp;gt;'); // May need to handle this case\n  });\n  test('should handle newlines and tabs', () => {\n    expect(sanitizeInput('test\\n<script>\\t')).toBe('test\\n&lt;script&gt;\\t');\n  });\n});"
+          },
+          {
+            "type": "edge-case",
+            "location": "createUser - concurrent calls and boundary values",
+            "priority": "low",
+            "reasoning": "Edge cases around concurrent user creation, maximum field lengths, and database transaction handling should be considered.",
+            "suggestedTest": "describe('createUser edge cases', () => {\n  test('should handle very long name after sanitization', async () => {\n    const longName = 'a'.repeat(1000);\n    const result = await createUser({ email: 'test@example.com', name: longName });\n    expect(result.name).toBe(longName);\n  });\n  test('should handle name with maximum special characters', async () => {\n    const specialName = '<>\"\\''.repeat(100);\n    const result = await createUser({ email: 'test@example.com', name: specialName });\n    expect(result.name).toContain('&lt;&gt;&quot;&#039;');\n  });\n  test('should create users with similar timestamps', async () => {\n    const [user1, user2] = await Promise.all([\n      createUser({ email: 'user1@example.com', name: 'User 1' }),\n      createUser({ email: 'user2@example.com', name: 'User 2' })\n    ]);\n    expect(user1.id).not.toBe(user2.id);\n  });\n});"
+          }
+        ],
+        "coverageEstimate": 0,
+        "summary": "The fixtures/clean-code.ts file has zero test coverage. All five exported functions (isValidEmail, sanitizeInput, createUser) and two private functions (generateId, saveUser) are completely untested. Critical security functions like sanitizeInput and email validation have no verification, and error paths in createUser are not exercised."
+      },
+      "refactorings": {
+        "file": "fixtures/clean-code.ts",
+        "suggestions": [
+          {
+            "type": "extract-function",
+            "location": "createUser function, lines 48-52",
+            "impact": "medium",
+            "description": "Extract input validation logic into a dedicated validation function",
+            "before": "export async function createUser(input: CreateUserInput): Promise<User> {\n  // Validate input\n  if (!input.email || !input.name) {\n    throw new Error('Email and name are required');\n  }\n\n  if (!isValidEmail(input.email)) {\n    throw new Error('Invalid email format');\n  }\n\n  // Sanitize input\n  const sanitizedName = sanitizeInput(input.name);\n\n  // Create user object\n  const user: User = {\n    id: generateId(),\n    email: input.email.toLowerCase(),\n    name: sanitizedName,\n    createdAt: new Date()\n  };\n\n  // Save to database (using parameterized query)\n  await saveUser(user);\n\n  return user;\n}",
+            "after": "function validateUserInput(input: CreateUserInput): void {\n  if (!input.email || !input.name) {\n    throw new Error('Email and name are required');\n  }\n\n  if (!isValidEmail(input.email)) {\n    throw new Error('Invalid email format');\n  }\n}\n\nexport async function createUser(input: CreateUserInput): Promise<User> {\n  validateUserInput(input);\n\n  const sanitizedName = sanitizeInput(input.name);\n\n  const user: User = {\n    id: generateId(),\n    email: input.email.toLowerCase(),\n    name: sanitizedName,\n    createdAt: new Date()\n  };\n\n  await saveUser(user);\n\n  return user;\n}",
+            "benefits": "Improves single responsibility principle, makes validation logic reusable, and simplifies the main function flow. The validation logic can be tested independently and reused elsewhere if needed."
+          },
+          {
+            "type": "modernize",
+            "location": "sanitizeInput function, lines 33-38",
+            "impact": "low",
+            "description": "Use a configuration object with Object.entries() to make HTML entity replacements more maintainable",
+            "before": "export function sanitizeInput(input: string): string {\n  return input\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#039;');\n}",
+            "after": "export function sanitizeInput(input: string): string {\n  const htmlEntities: Record<string, string> = {\n    '<': '&lt;',\n    '>': '&gt;',\n    '\"': '&quot;',\n    \"'\": '&#039;'\n  };\n\n  return input.replace(/[<>\"']/g, (char) => htmlEntities[char] || char);\n}",
+            "benefits": "Reduces repetitive chaining, makes it easier to add or modify entity replacements, and improves maintainability. The mapping is clearer and more declarative."
+          },
+          {
+            "type": "simplify",
+            "location": "createUser function, lines 60-63",
+            "impact": "low",
+            "description": "Use object property shorthand and directly pass normalized email",
+            "before": "const user: User = {\n  id: generateId(),\n  email: input.email.toLowerCase(),\n  name: sanitizedName,\n  createdAt: new Date()\n};",
+            "after": "const normalizedEmail = input.email.toLowerCase();\nconst id = generateId();\nconst createdAt = new Date();\n\nconst user: User = {\n  id,\n  email: normalizedEmail,\n  name: sanitizedName,\n  createdAt\n};",
+            "benefits": "Uses ES6 property shorthand for cleaner syntax and makes the transformation steps more explicit. Each data transformation is clearly visible as a separate step."
+          },
+          {
+            "type": "pattern-improvement",
+            "location": "createUser function overall structure",
+            "impact": "medium",
+            "description": "Consider using a builder pattern or factory pattern for user creation to separate concerns",
+            "before": "export async function createUser(input: CreateUserInput): Promise<User> {\n  // Validate input\n  if (!input.email || !input.name) {\n    throw new Error('Email and name are required');\n  }\n\n  if (!isValidEmail(input.email)) {\n    throw new Error('Invalid email format');\n  }\n\n  // Sanitize input\n  const sanitizedName = sanitizeInput(input.name);\n\n  // Create user object\n  const user: User = {\n    id: generateId(),\n    email: input.email.toLowerCase(),\n    name: sanitizedName,\n    createdAt: new Date()\n  };\n\n  // Save to database (using parameterized query)\n  await saveUser(user);\n\n  return user;\n}",
+            "after": "class UserFactory {\n  static createFromInput(input: CreateUserInput): User {\n    const sanitizedName = sanitizeInput(input.name);\n    \n    return {\n      id: generateId(),\n      email: input.email.toLowerCase(),\n      name: sanitizedName,\n      createdAt: new Date()\n    };\n  }\n}\n\nexport async function createUser(input: CreateUserInput): Promise<User> {\n  validateUserInput(input);\n  \n  const user = UserFactory.createFromInput(input);\n  await saveUser(user);\n  \n  return user;\n}",
+            "benefits": "Separates user object creation logic from validation and persistence. Makes the code more testable, adheres to single responsibility principle, and provides a clear place to add additional user creation methods if needed."
+          },
+          {
+            "type": "modernize",
+            "location": "saveUser function, lines 84-87",
+            "impact": "low",
+            "description": "Use array destructuring or object mapping for clearer parameter assignment",
+            "before": "async function saveUser(user: User): Promise<void> {\n  // Using parameterized query - safe from SQL injection\n  const query = 'INSERT INTO users (id, email, name, created_at) VALUES ($1, $2, $3, $4)';\n  const params = [user.id, user.email, user.name, user.createdAt];\n  \n  // await db.query(query, params);\n}",
+            "after": "async function saveUser(user: User): Promise<void> {\n  // Using parameterized query - safe from SQL injection\n  const query = 'INSERT INTO users (id, email, name, created_at) VALUES ($1, $2, $3, $4)';\n  const { id, email, name, createdAt } = user;\n  const params = [id, email, name, createdAt];\n  \n  // await db.query(query, params);\n}",
+            "benefits": "Makes the parameter extraction more explicit and easier to verify that the correct fields are being used in the correct order. Improves readability when the params array grows larger."
+          },
+          {
+            "type": "simplify",
+            "location": "isValidEmail function, lines 27-29",
+            "impact": "low",
+            "description": "Inline the regex pattern or add more comprehensive email validation",
+            "before": "export function isValidEmail(email: string): boolean {\n  const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n  return emailRegex.test(email);\n}",
+            "after": "export function isValidEmail(email: string): boolean {\n  return /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email);\n}",
+            "benefits": "Simplifies the function by removing an unnecessary intermediate variable. For a simple one-liner validation, the regex can be inlined without sacrificing readability."
+          }
+        ],
+        "summary": "The code is already well-structured with good separation of concerns. Main opportunities include extracting validation logic into a dedicated function, modernizing the sanitization approach with a cleaner object-based implementation, and considering a factory pattern for user creation to better separate object construction from business logic."
+      }
+    }
+  ],
+  "summary": {
+    "totalFiles": 1,
+    "overallScore": 72,
+    "criticalIssues": 0,
+    "highPriorityTests": 5,
+    "refactoringOpportunities": 6
+  },
+  "recommendations": [
+    {
+      "priority": "critical",
+      "category": "Testing",
+      "description": "Add comprehensive test coverage for security-critical functions. The file currently has 0% test coverage with critical functions like sanitizeInput and createUser completely untested.",
+      "files": [
+        "fixtures/clean-code.ts"
+      ]
+    },
+    {
+      "priority": "high",
+      "category": "Security",
+      "description": "Replace manual XSS sanitization with a proven library like DOMPurify or validator.js. The current implementation misses many attack vectors including backticks, JavaScript URLs, event handlers, and Unicode exploits.",
+      "files": [
+        "fixtures/clean-code.ts"
+      ]
+    },
+    {
+      "priority": "high",
+      "category": "Reliability",
+      "description": "Add error handling for the async saveUser() operation. Currently, database failures would result in unhandled promise rejections.",
+      "files": [
+        "fixtures/clean-code.ts"
+      ]
+    },
+    {
+      "priority": "high",
+      "category": "Bug Risk",
+      "description": "Replace the weak ID generation mechanism with a proper UUID library. The current approach using Date.now() + Math.random() is not guaranteed to be unique in high-concurrency or distributed scenarios.",
+      "files": [
+        "fixtures/clean-code.ts"
+      ]
+    },
+    {
+      "priority": "medium",
+      "category": "Code Quality",
+      "description": "Extract validation logic into a dedicated function to improve testability and maintainability. Consider implementing a factory pattern for user creation to better separate concerns.",
+      "files": [
+        "fixtures/clean-code.ts"
+      ]
+    },
+    {
+      "priority": "medium",
+      "category": "Best Practices",
+      "description": "Use a comprehensive email validation library instead of a simplistic regex pattern. The current implementation may allow invalid email formats or miss edge cases.",
+      "files": [
+        "fixtures/clean-code.ts"
+      ]
+    },
+    {
+      "priority": "low",
+      "category": "Maintainability",
+      "description": "Normalize email to lowercase before validation to ensure consistent processing. Currently, validation is case-sensitive but normalization happens afterward.",
+      "files": [
+        "fixtures/clean-code.ts"
+      ]
+    },
+    {
+      "priority": "low",
+      "category": "Code Clarity",
+      "description": "Either uncomment the database call in saveUser() or add clear documentation explaining why it's disabled. Currently, the function succeeds silently without persisting data.",
+      "files": [
+        "fixtures/clean-code.ts"
+      ]
+    }
+  ],
+  "metadata": {
+    "analyzedAt": "2026-10-12T05:21:54.525Z",
+    "duration": 252007,
+    "agentVersions": {
+      "code-quality-analyzer": "1.0.0",
+      "test-coverage-analyzer": "1.0.0",
+      "refactoring-suggester": "1.0.0"
+    }
+  }
+}

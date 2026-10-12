@@ -51,6 +51,8 @@ interface ResultMessage {
   subtype: string;
   structured_output?: unknown;
   result?: string;
+  num_turns?: number;
+  errors?: unknown;
 }
 
 /** Shape of an assistant message, used only to log which tools the agents call */
@@ -63,6 +65,14 @@ interface AssistantMessage {
       input?: Record<string, unknown>;
     }>;
   };
+}
+
+/** Shape of the system init message, used only to log MCP server status */
+interface InitMessage {
+  type: 'system';
+  subtype: string;
+  mcp_servers?: unknown;
+  tools?: unknown;
 }
 
 const DEFAULT_MAX_TURNS = 150;
@@ -198,6 +208,14 @@ export class CodeReviewOrchestrator {
       prompt: buildOrchestratorPrompt(owner, repo, prNumber),
       options
     })) {
+      const raw = message as unknown as Record<string, unknown>;
+      logger.info('Agent message', { type: raw.type, subtype: raw.subtype });
+
+      if (raw.type === 'system' && raw.subtype === 'init') {
+        this.logInit(message as unknown as InitMessage);
+        continue;
+      }
+
       if (message.type === 'assistant') {
         this.logToolCalls(message as unknown as AssistantMessage);
         continue;
@@ -209,6 +227,11 @@ export class CodeReviewOrchestrator {
 
       const result = message as unknown as ResultMessage;
       finalSubtype = result.subtype;
+      logger.info('Agent result', {
+        subtype: result.subtype,
+        numTurns: result.num_turns,
+        errors: result.errors
+      });
 
       if (result.subtype === 'success') {
         structuredOutput = result.structured_output;
@@ -233,6 +256,17 @@ export class CodeReviewOrchestrator {
     }
 
     return parsed.data;
+  }
+
+  /**
+   * Log which MCP servers connected and which tools the agent has, so a
+   * failed GitHub or ESLint server shows up in logs/combined.log.
+   */
+  private logInit(message: InitMessage): void {
+    logger.info('Agent init', {
+      mcpServers: message.mcp_servers,
+      tools: message.tools
+    });
   }
 
   /**

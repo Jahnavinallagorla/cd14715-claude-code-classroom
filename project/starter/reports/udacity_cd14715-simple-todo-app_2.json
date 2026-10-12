@@ -1,0 +1,121 @@
+{
+  "pullRequest": {
+    "owner": "udacity",
+    "repo": "cd14715-simple-todo-app",
+    "number": 2
+  },
+  "fileReviews": [
+    {
+      "file": "src/todo.ts",
+      "codeQuality": {
+        "file": "src/todo.ts",
+        "issues": [
+          {
+            "line": 121,
+            "severity": "critical",
+            "category": "security",
+            "description": "SQL Injection vulnerability in searchTodos function",
+            "suggestion": "Use parameterized queries"
+          },
+          {
+            "line": 130,
+            "severity": "critical",
+            "category": "security",
+            "description": "SQL Injection vulnerability in searchTodosByStatus function",
+            "suggestion": "Use parameterized queries"
+          },
+          {
+            "line": 139,
+            "severity": "critical",
+            "category": "security",
+            "description": "SQL Injection vulnerability in getTodosByUser function",
+            "suggestion": "Use parameterized queries"
+          }
+        ],
+        "overallScore": 15,
+        "summary": "Three new search functions contain critical SQL injection vulnerabilities"
+      },
+      "testCoverage": {
+        "file": "src/todo.ts",
+        "hasTests": true,
+        "testFiles": [
+          "src/todo.test.ts"
+        ],
+        "untestedPaths": [
+          {
+            "type": "function",
+            "location": "searchTodos",
+            "priority": "critical",
+            "reasoning": "NEW function with SQL injection vulnerability",
+            "suggestedTest": "Add security tests"
+          },
+          {
+            "type": "function",
+            "location": "searchTodosByStatus",
+            "priority": "critical",
+            "reasoning": "NEW function with SQL injection vulnerability",
+            "suggestedTest": "Add security tests"
+          },
+          {
+            "type": "function",
+            "location": "getTodosByUser",
+            "priority": "critical",
+            "reasoning": "NEW function with SQL injection vulnerability",
+            "suggestedTest": "Add security tests"
+          }
+        ],
+        "coverageEstimate": 15,
+        "summary": "All three NEW functions are untested"
+      },
+      "refactorings": {
+        "file": "src/todo.ts",
+        "suggestions": [
+          {
+            "type": "extract-function",
+            "location": "Multiple query calls",
+            "impact": "high",
+            "description": "Extract query execution pattern",
+            "before": "const rows = await db.query(query);",
+            "after": "async function executeQuery(query, params) { return await db.query(query, params); }",
+            "benefits": "Eliminates duplication"
+          }
+        ],
+        "summary": "Extract repeated query execution pattern"
+      }
+    }
+  ],
+  "summary": {
+    "totalFiles": 1,
+    "overallScore": 15,
+    "criticalIssues": 3,
+    "highPriorityTests": 3,
+    "refactoringOpportunities": 1
+  },
+  "recommendations": [
+    {
+      "priority": "critical",
+      "category": "Security",
+      "description": "Fix SQL injection vulnerabilities in all three search functions",
+      "files": [
+        "src/todo.ts"
+      ]
+    },
+    {
+      "priority": "critical",
+      "category": "Testing",
+      "description": "Add comprehensive test coverage for new functions",
+      "files": [
+        "src/todo.ts"
+      ]
+    }
+  ],
+  "metadata": {
+    "analyzedAt": "2026-10-12T05:34:50.940Z",
+    "duration": 751579,
+    "agentVersions": {
+      "code-quality-analyzer": "1.0.0",
+      "test-coverage-analyzer": "1.0.0",
+      "refactoring-suggester": "1.0.0"
+    }
+  }
+}
