@@ -1,42 +1,28 @@
-/**
- * Model Context Protocol (MCP) server configurations
+﻿/**
+ * MCP server configuration for the code review system.
  *
- * Required MCP Servers:
- * 1. GitHub - For PR/repo operations
- * 2. ESLint - For code linting and style analysis
+ * - github: pull request and repository data (needs GITHUB_TOKEN for private
+ *   repos or higher rate limits; mapped to the variable the server expects)
+ * - eslint: linting and style analysis (no authentication required)
  *
- * Documentation:
- * - MCP Protocol: https://modelcontextprotocol.io
- * - GitHub MCP: https://github.com/github/github-mcp-server
- * - ESLint MCP: https://eslint.org/docs/latest/use/mcp
+ * On Windows, npm's launcher is called npx.cmd, so the command is chosen by
+ * platform. On macOS and Linux it is plain npx.
  */
+const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 export const mcpServersConfig = {
-  /**
-   * GitHub MCP Server
-   * Provides tools for GitHub API operations
-   *
-   * TODO: Configure with:
-   * - type: 'stdio' as const
-   * - command: 'npx'
-   * - args: ['-y', '@modelcontextprotocol/server-github']
-   * - env: { GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_TOKEN || '' }
-   *
-   * Note: GITHUB_TOKEN is optional (recommended for private repos and higher rate limits).
-   * The GitHub MCP server expects GITHUB_PERSONAL_ACCESS_TOKEN as the env var name.
-   * We map our GITHUB_TOKEN from .env to this expected name.
-   */
-  github: { },
-
-  /**
-   * ESLint MCP Server
-   * Provides tools for linting and code quality analysis
-   *
-   * TODO: Configure with:
-   * - type: 'stdio' as const
-   * - command: 'npx'
-   * - args: ['-y', '@eslint/mcp@latest']
-   * - env: {}
-   */
-  eslint: { }
+  github: {
+    type: 'stdio' as const,
+    command: npxCommand,
+    args: ['-y', '@modelcontextprotocol/server-github'],
+    env: {
+      GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_TOKEN || ''
+    }
+  },
+  eslint: {
+    type: 'stdio' as const,
+    command: npxCommand,
+    args: ['-y', '@eslint/mcp@latest'],
+    env: {}
+  }
 };

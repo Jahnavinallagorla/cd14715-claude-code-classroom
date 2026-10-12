@@ -33,5 +33,11 @@
     "lesson-12-evaluating-agents/exercise/starter",
     "lesson-12-evaluating-agents/exercise/solution",
     "project/starter"
-  ]
+  ],
+  "dependencies": {
+    "zod-to-json-schema": "^3.25.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5"
+  }
 }
